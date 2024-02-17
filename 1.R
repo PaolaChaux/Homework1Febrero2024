@@ -7,12 +7,17 @@ install.packages("readr")
 install.packages("ggplot2")
 install.packages("tidyr")
 install.packages("dplyr")
+install.packages("modeest")
+install.packages("hrbrthemes")
+
 
 #Cargar librerias
 library(readr)
 library(ggplot2)
 library(tidyr)
 library(dplyr)
+library(modeest)
+library(hrbrthemes)
 
 #Fijar el directorio de trabajo
 setwd("P:/Estadistica y probabilidad 2/Homework1 febrero")
@@ -38,6 +43,51 @@ sapply(DF, function(x) any(x == "", na.rm = TRUE))
 
 
 #Estadísticas descriptivas
+#age
+DF %>%
+  dplyr::reframe(
+    Prom    = mean(age, na.rm = TRUE),
+    Mediana = median(age, na.rm = TRUE),
+    Moda = mfv(age, na_rm = TRUE),
+    DE      = sd(age, na.rm = TRUE),
+    Max     = max(age, na.rm = TRUE),
+    Min     = min(age, na.rm = TRUE),
+    CV     = sd(age, na.rm = TRUE) / mean(age, na.rm = TRUE) * 100)
+
+
+#BMI
+DF %>%
+  dplyr::reframe(Prom    = mean(bmi, na.rm = TRUE),
+                   Mediana = median(bmi, na.rm = TRUE),
+                   Moda = mfv(bmi, na_rm = TRUE),
+                   DE      = sd(bmi, na.rm = TRUE),
+                   Max     = max(bmi, na.rm = TRUE),
+                   Min     = min(bmi, na.rm = TRUE),
+                   CV       = sd(bmi, na.rm = TRUE)/mean(bmi, na.rm = TRUE)*100)
+
+#Children(REVISAR, NO NETIENDO)
+DF$children <- as.numeric(as.character(DF$children))
+
+DF %>%
+  dplyr::reframe(Prom    = mean(children, na.rm = TRUE),
+                   Mediana = median(children, na.rm = TRUE),
+                   Moda = mfv(children, na_rm = TRUE),
+                   DE      = sd(children, na.rm = TRUE),
+                   Max     = max(children, na.rm = TRUE),
+                   Min     = min(children, na.rm = TRUE),
+                   CV       = sd(children, na.rm = TRUE)/mean(children, na.rm = TRUE)*100)
+
+#Charges
+DF %>%
+  dplyr::reframe(Prom    = mean(charges, na.rm = TRUE),
+                   Mediana = median(charges, na.rm = TRUE),
+                   Moda    = mfv(charges, na.rm = TRUE)[1],
+                   DE      = sd(charges, na.rm = TRUE),
+                   Max     = max(charges, na.rm = TRUE),
+                   Min     = min(charges, na.rm = TRUE),
+                   CV       = sd(charges, na.rm = TRUE)/mean(charges, na.rm = TRUE)*100)
+
+
 #Rango Intercuartilico(IQR) para hayar valores atipicos
 #Age
 valAtipAge = DF %>%
@@ -174,6 +224,9 @@ ggplot(data = DF, aes(x = children, fill = children)) +
   labs(title = "Distribución del Número de Hijos", x = "Número de Hijos", y = "Cantidad") +
   theme_minimal()
 
+
+
+
 #CATEGORICAS - CUALITATIVAS
 # Gráfico de barras para la variable sex
 DF$sex <- factor(DF$sex, exclude = NULL)
@@ -199,15 +252,74 @@ ggplot(data = DF, aes(x = region, fill = region)) +
   labs(title = "Distribución por Región", x = "Región", y = "Cantidad") +
   theme_minimal()
 
-# esto solo esestaditcia descrptiva
-#DF %>%
-#  group_by(Seccional) %>%
-#  dplyr::summarise(Prom    = mean(Salario, na.rm = TRUE),
-#                   Mediana = median(Salario, na.rm = TRUE),
-#                   Moda = mfv(Salario, na_rm = FALSE),
-#                   DE      = sd(Salario, na.rm = TRUE),
-#                   Max     = max(Salario, na.rm = TRUE),
-#                   Min     = min(Salario, na.rm = TRUE),
-#CV       = sd(Salario, na.rm = TRUE)/mean(Salario, na.rm = TRUE)*100)
+#Asimetría y forma
+install.packages("psych")
+library(psych)
 
+#Coeficiente de asimetría
+skew(DF$age)
+skew(DF$bmi)
+skew(DF$children)
+skew(DF$charges)
+
+#Coeficiente de curtosis
+kurtosi(DF$age)
+kurtosi(DF$bmi)
+kurtosi(DF$children)
+kurtosi(DF$charges)
+# necesitamos poner los cuartiles segun 2 variables?
 #
+#Cuartiles
+#Datos_salario %>%
+ # group_by(Facultad)%>%
+  #dplyr::summarise(Q1 = as.numeric(quantile(Salario, 0.25)), 
+   #                Q2 = as.numeric(quantile(Salario, 0.5)),
+    #               Q3 = as.numeric(quantile(Salario, 0.75)))
+
+
+
+#Correlacioness
+#Diagrama de dispersion
+#Charges y Age
+ggplot(DF, aes(x = age, y = charges)) + 
+  geom_point(
+    color = "black",
+    fill = "#69b3a2",
+    shape = 22,
+    alpha = 0.5,
+    size = 1,
+    stroke = 1
+  ) +
+  labs(title = "Relación entre Edad y Cargos Médicos", x = "Edad", y = "Cargos Médicos") +
+  theme_ipsum()
+
+#charges y bmi
+ggplot(DF, aes(x = bmi, y = charges)) + 
+  geom_point(
+    color = "black",
+    fill = "#69b3a2",
+    shape = 22,
+    alpha = 0.5,
+    size = 1,
+    stroke = 1
+  ) +
+  labs(title = "Relación entre BMI y Cargos Médicos", x = "BMI", y = "Cargos Médicos") +
+  theme_ipsum()
+
+#charges y children(este para mi no tiene ssentido o alguna importnacia porque son numeros enteros)
+ggplot(DF, aes(x = children, y = charges)) + 
+  geom_point(
+    color = "black",
+    fill = "#69b3a2",
+    shape = 22,
+    alpha = 0.5,
+    size = 1,
+    stroke = 1
+  ) +
+  labs(title = "Relación entre Número de Hijos y Cargos Médicos", x = "Número de Hijos", y = "Cargos Médicos") +
+  theme_ipsum()
+
+#Correlación muestra (r = 0.8397859)
+numeric_df <- DF[, c("age", "bmi", "charges")]
+cor(numeric_df, use = "complete.obs")
+
