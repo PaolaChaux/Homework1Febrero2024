@@ -9,6 +9,9 @@ install.packages("tidyr")
 install.packages("dplyr")
 install.packages("modeest")
 install.packages("hrbrthemes")
+install.packages("naniar")
+install.packages(c("knitr", "kableExtra", "rmarkdown"))
+install.packages("tibble")
 
 
 #Cargar librerias
@@ -18,6 +21,10 @@ library(tidyr)
 library(dplyr)
 library(modeest)
 library(hrbrthemes)
+library(naniar)
+library(knitr)
+library(kableExtra)
+library(tibble)
 
 #Fijar el directorio de trabajo
 setwd("P:/Estadistica y probabilidad 2/Homework1 febrero")
@@ -26,7 +33,8 @@ setwd("P:/Estadistica y probabilidad 2/Homework1 febrero")
 dir()
 
 #Cargar los datos
-DF <- read_csv("dataset_HW1_insurance.csv")
+df1 <- read_csv("dataset_HW1_insurance.csv")
+DF <- select(df1, -1)
 
 # Visualizar las primera filas del conjunto de datos
 head(DF)
@@ -34,7 +42,7 @@ head(DF)
 # Verificar datos faltantes
 sum(is.na(DF))
 
-# Visualizar los datos faltantes
+# Visualizar los datos NA
 gg_miss_var(DF)
 
 # Verificar si hay cadenas vacías en todas las columnas del dataframe
@@ -81,7 +89,7 @@ DF %>%
 DF %>%
   dplyr::reframe(Prom    = mean(charges, na.rm = TRUE),
                    Mediana = median(charges, na.rm = TRUE),
-                   Moda    = mfv(charges, na.rm = TRUE)[1],
+                   Moda    = mfv(charges, na_rm = TRUE)[1],
                    DE      = sd(charges, na.rm = TRUE),
                    Max     = max(charges, na.rm = TRUE),
                    Min     = min(charges, na.rm = TRUE),
@@ -90,79 +98,79 @@ DF %>%
 
 #Rango Intercuartilico(IQR) para hayar valores atipicos
 #Age
-valAtipAge = DF %>%
-          summarise(Q1Age = quantile(DF$age, probs = 0.25, na.rm = TRUE),
-                    Q2Age = quantile(DF$age, probs = 0.5, na.rm = TRUE),
-                    Q3Age = quantile(DF$age, probs = 0.75, na.rm = TRUE),
-                    IQRAge = Q3Age - Q1Age,
-                    LimInfAge = Q1Age - 1.5 * IQRAge,
-                    LimSupAge = Q3Age + 1.5 * IQRAge,
-                    # Identificar valores atípicos
-                    outliersAge = DF[DF$age < LimInfAge | DF$age > LimSupAge, ])
+valAtipAge <- DF %>%
+  summarise(
+    Q1Age = quantile(age, probs = 0.25, na.rm = TRUE),
+    Q2Age = quantile(age, probs = 0.5, na.rm = TRUE),
+    Q3Age = quantile(age, probs = 0.75, na.rm = TRUE),
+    IQRAge = Q3Age - Q1Age,
+    LimInfAge = Q1Age - 1.5 * IQRAge,
+    LimSupAge = Q3Age + 1.5 * IQRAge)
+  # Identificar valores atípicos
+    outliersAge <- DF %>%
+      filter(age < valAtipAge$LimInfAge | age > valAtipAge$LimSupAge)
+
+# Imprimir los resultados  
 print(valAtipAge)
+print(outliersAge)
 
 #Bmi 
-valAtipBmi = DF %>%
-  summarise(Q1Bmi  = quantile(DF$bmi, probs = 0.25, na.rm = TRUE),
-            Q2Bmi  = quantile(DF$bmi, probs = 0.5, na.rm = TRUE),
-            Q3Bmi  = quantile(DF$bmi, probs = 0.75, na.rm = TRUE),
-            IQRBmi  = Q3Bmi  - Q1Bmi,
-            LimInfBmi  = Q1Bmi  - 1.5 * IQRBmi ,
-            LimSupBmi  = Q3Bmi  + 1.5 * IQRBmi ,
-            # Identificar valores atípicos
-            outliersBmi  = DF[DF$bmi < LimInfBmi  | DF$bmi > LimSupBmi , ])
-print(valAtipBmi )
+valAtipBmi <- DF %>%
+  summarise(
+    Q1Bmi = quantile(bmi, probs = 0.25, na.rm = TRUE),
+    Q2Bmi = quantile(bmi, probs = 0.5, na.rm = TRUE),
+    Q3Bmi = quantile(bmi, probs = 0.75, na.rm = TRUE),
+    IQRBmi = Q3Bmi - Q1Bmi,
+    LimInfBmi = Q1Bmi - 1.5 * IQRBmi,
+    LimSupBmi = Q3Bmi + 1.5 * IQRBmi)
+    outliersBmi <- DF %>%
+      filter(bmi < valAtipBmi$LimInfBmi | bmi > valAtipBmi$LimSupBmi)
+print(valAtipBmi)
+print(outliersBmi)
 
 #Children
-valAtipCHI = DF %>%
-  summarise(Q1CHI  = quantile(DF$children, probs = 0.25, na.rm = TRUE),
-            Q2CHI  = quantile(DF$children, probs = 0.5, na.rm = TRUE),
-            Q3CHI  = quantile(DF$children, probs = 0.75, na.rm = TRUE),
-            IQRCHI  = Q3CHI  - Q1CHI,
-            LimInfCHI  = Q1CHI  - 1.5 * IQRCHI ,
-            LimSupCHI  = Q3CHI  + 1.5 * IQRCHI ,
-            # Identificar valores atípicos
-            outliersCHI  = DF[DF$children < LimInfCHI  | DF$children > LimSupCHI , ])
-print(valAtipCHI )
-
+valAtipCHI <- DF %>%
+  summarise(
+    Q1CHI = quantile(children, probs = 0.25, na.rm = TRUE),
+    Q2CHI = quantile(children, probs = 0.5, na.rm = TRUE),
+    Q3CHI = quantile(children, probs = 0.75, na.rm = TRUE),
+    IQRCHI = Q3CHI - Q1CHI,
+    LimInfCHI = Q1CHI - 1.5 * IQRCHI,
+    LimSupCHI = Q3CHI + 1.5 * IQRCHI)
+      outliersCHI <- DF %>%
+         filter(children < valAtipCHI$LimInfCHI | children > valAtipCHI$LimSupCHI)
+print(valAtipCHI)
+print(outliersCHI)
+      
 #Charges
-valAtipCHA = DF %>%
-  summarise(Q1CHA  = quantile(DF$charges, probs = 0.25, na.rm = TRUE),
-            Q2CHA  = quantile(DF$charges, probs = 0.5, na.rm = TRUE),
-            Q3CHA  = quantile(DF$charges, probs = 0.75, na.rm = TRUE),
-            IQRCHA  = Q3CHA  - Q1CHA,
-            LimInfCHA  = Q1CHA  - 1.5 * IQRCHA ,
-            LimSupCHA  = Q3CHA  + 1.5 * IQRCHA ,
-            # Identificar valores atípicos
-            outliersCHA  = DF[DF$charges < LimInfCHA  | DF$charges > LimSupCHA , ])
-print(valAtipCHA )
+valAtipCHA <- DF %>%
+  summarise(
+    Q1CHA = quantile(charges, probs = 0.25, na.rm = TRUE),
+    Q2CHA = quantile(charges, probs = 0.5, na.rm = TRUE),
+    Q3CHA = quantile(charges, probs = 0.75, na.rm = TRUE),
+    IQRCHA = Q3CHA - Q1CHA,
+    LimInfCHA = Q1CHA - 1.5 * IQRCHA,
+    LimSupCHA = Q3CHA + 1.5 * IQRCHA)
+    outliersCHA <- DF %>%
+       filter(charges < valAtipCHA$LimInfCHA | charges > valAtipCHA$LimSupCHA)
+print(valAtipCHA)
+print(outliersCHA)
 
 #Creacion del boxplot con puntos individuales de datos 
 #Transformacion del DataFrame a alargo (porque?)
 DF_long <- DF %>%
   pivot_longer(
-    cols = c(age, bmi, children, charges), 
+    cols = c(age, bmi, children,charges), 
     names_to = "variable", 
     values_to = "value" )
 
-# Boxplot
+# Boxplot, MIRAR COMO MANEJAR LOS BOXPLOT porque hacerlo juuntos todos 4 no funciona
 ggplot(DF_long, aes(x = variable, y = value)) +
   geom_boxplot(outlier.shape = NA) +  # No mostrar los outliers aquí para no sobreponerlos
   geom_jitter(width = 0.2, aes(color = variable), alpha = 0.5) +  # Añadir puntos individuales
   labs(x = "Variables", y = "Valores") +  # Etiquetas de los ejes
   theme_minimal() 
 
-# Valores atipicos de Charges
-valAtipCharges = DF %>%
-  summarise(Q1Charges = quantile(charges, probs = 0.25, na.rm = TRUE),
-            Q2Charges = quantile(charges, probs = 0.5, na.rm = TRUE),
-            Q3Charges = quantile(charges, probs = 0.75, na.rm = TRUE),
-            IQRCharges = Q3Charges - Q1Charges,
-            LimInfCharges = Q1Charges - 1.5 * IQRCharges,
-            LimSupCharges = Q3Charges + 1.5 * IQRCharges,
-  outliersCharges = list(DF[DF$charges < LimInfCharges | DF$charges > LimSupCharges, ]))
-
-print(valAtipCharges)
 
 #Graficos
 # Histograma Age
@@ -259,6 +267,7 @@ library(psych)
 #Coeficiente de asimetría
 skew(DF$age)
 skew(DF$bmi)
+DF$children <- as.numeric(as.character(DF$children))
 skew(DF$children)
 skew(DF$charges)
 
@@ -323,3 +332,4 @@ ggplot(DF, aes(x = children, y = charges)) +
 numeric_df <- DF[, c("age", "bmi", "charges")]
 cor(numeric_df, use = "complete.obs")
 
+#falta todo lo de modelos, hipotesis y supuestos
