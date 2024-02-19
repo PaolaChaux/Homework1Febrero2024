@@ -333,6 +333,7 @@ kurtosi(DF$children)
 kurtosi(DF$charges)
 # necesitamos poner los cuartiles segun 2 variables?
 #
+
 #Cuartiles
 #Datos_salario %>%
  # group_by(Facultad)%>%
