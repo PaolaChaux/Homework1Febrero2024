@@ -12,7 +12,8 @@ install.packages("hrbrthemes")
 install.packages("naniar")
 install.packages(c("knitr", "kableExtra", "rmarkdown"))
 install.packages("tibble")
-
+install.packages("xtable")
+install.packages("openxlsx")
 
 #Cargar librerias
 library(readr)
@@ -25,6 +26,7 @@ library(naniar)
 library(knitr)
 library(kableExtra)
 library(tibble)
+library(openxlsx)
 
 #Fijar el directorio de trabajo
 setwd("P:/Estadistica y probabilidad 2/Homework1 febrero")
@@ -38,12 +40,17 @@ DF <- select(df1, -1)
 
 # Visualizar las primera filas del conjunto de datos
 head(DF)
+latex_table <- xtable(head(DF))
+print(latex_table, type = "latex", include.rownames = TRUE)
 
 # Verificar datos faltantes
 sum(is.na(DF))
 
 # Visualizar los datos NA
 gg_miss_var(DF)
+na_plot <- gg_miss_var(DF)
+# Guardar el gráfico como un archivo PNG
+ggsave("na_plot.png", na_plot, width = 6, height = 4, dpi = 300)
 
 # Verificar si hay cadenas vacías en todas las columnas del dataframe
 sapply(DF, function(x) any(x == ""))
@@ -52,7 +59,7 @@ sapply(DF, function(x) any(x == "", na.rm = TRUE))
 
 #Estadísticas descriptivas
 #age
-DF %>%
+tabla_1 <-DF %>%
   dplyr::reframe(
     Prom    = mean(age, na.rm = TRUE),
     Mediana = median(age, na.rm = TRUE),
@@ -62,9 +69,12 @@ DF %>%
     Min     = min(age, na.rm = TRUE),
     CV     = sd(age, na.rm = TRUE) / mean(age, na.rm = TRUE) * 100)
 
+write.xlsx(tabla_1, "Tabla_age.xlsx")
+library(xtable)
+xtable(tabla_1)
 
 #BMI
-DF %>%
+tabla_2 <- DF %>%
   dplyr::reframe(Prom    = mean(bmi, na.rm = TRUE),
                    Mediana = median(bmi, na.rm = TRUE),
                    Moda = mfv(bmi, na_rm = TRUE),
@@ -72,11 +82,13 @@ DF %>%
                    Max     = max(bmi, na.rm = TRUE),
                    Min     = min(bmi, na.rm = TRUE),
                    CV       = sd(bmi, na.rm = TRUE)/mean(bmi, na.rm = TRUE)*100)
+write.xlsx(tabla_2, "Tabla_bmi.xlsx")
+xtable(tabla_2)
 
 #Children(REVISAR, NO NETIENDO)
 DF$children <- as.numeric(as.character(DF$children))
 
-DF %>%
+tabla_3 <- DF %>%
   dplyr::reframe(Prom    = mean(children, na.rm = TRUE),
                    Mediana = median(children, na.rm = TRUE),
                    Moda = mfv(children, na_rm = TRUE),
@@ -84,9 +96,11 @@ DF %>%
                    Max     = max(children, na.rm = TRUE),
                    Min     = min(children, na.rm = TRUE),
                    CV       = sd(children, na.rm = TRUE)/mean(children, na.rm = TRUE)*100)
+write.xlsx(tabla_3, "Tabla_chi.xlsx")
+xtable(tabla_3)
 
 #Charges
-DF %>%
+tabla_4 <- DF %>%
   dplyr::reframe(Prom    = mean(charges, na.rm = TRUE),
                    Mediana = median(charges, na.rm = TRUE),
                    Moda    = mfv(charges, na_rm = TRUE)[1],
@@ -94,6 +108,8 @@ DF %>%
                    Max     = max(charges, na.rm = TRUE),
                    Min     = min(charges, na.rm = TRUE),
                    CV       = sd(charges, na.rm = TRUE)/mean(charges, na.rm = TRUE)*100)
+write.xlsx(tabla_4, "Tabla_cha.xlsx")
+xtable(tabla_4)
 
 
 #Rango Intercuartilico(IQR) para hayar valores atipicos
@@ -236,6 +252,28 @@ ggplot(data = DF, aes(x = children, fill = children)) +
 
 
 #CATEGORICAS - CUALITATIVAS
+# Moda 
+#sex
+moda_sex <- DF %>%
+  count(sex) %>%
+  filter(n == max(n)) %>%
+  select(sex)
+print(moda_sex)
+
+#smoker
+moda_smoker <- DF %>%
+  count(smoker) %>%
+  filter(n == max(n)) %>%
+  select(smoker)
+print(moda_smoker)
+
+#region
+moda_region <- DF %>%
+  count(region) %>%
+  filter(n == max(n)) %>%
+  select(region)
+print(moda_region)
+
 # Gráfico de barras para la variable sex
 DF$sex <- factor(DF$sex, exclude = NULL)
 ggplot(data = DF, aes(x = sex, fill = sex)) +
@@ -243,6 +281,10 @@ ggplot(data = DF, aes(x = sex, fill = sex)) +
   scale_fill_manual(values = c("female" = "pink", "male" = "lightblue", "NA" = "grey"), na.translate = TRUE) +
   labs(title = "Distribución del Sexo", x = "Sexo", y = "Cantidad") +
   theme_minimal()
+DF %>%
+  group_by(sex) %>%
+  summarise(Frecuencia = n(),
+            Proporcion = n() / nrow(DF) * 100)
 
 # Gráfico de barras para la variable smoker
 DF$smoker <- factor(DF$smoker, exclude = NULL)
@@ -251,6 +293,10 @@ ggplot(data = DF, aes(x = smoker, fill = smoker)) +
   scale_fill_manual(values = c("yes" = "orange", "no" = "lightgreen", "NA" = "grey"), na.translate = TRUE) +
   labs(title = "Distribución de Fumadores", x = "Fumador", y = "Cantidad") +
   theme_minimal()
+DF %>%
+  group_by(smoker) %>%
+  summarise(Frecuencia = n(),
+            Proporcion = n() / nrow(DF) * 100)
 
 # Gráfico de barras para la variable región
 DF$region <- factor(DF$region, exclude = NULL)
@@ -259,6 +305,15 @@ ggplot(data = DF, aes(x = region, fill = region)) +
   scale_fill_manual(values = c("northeast" = "steelblue", "southeast" = "gold", "southwest" = "coral", "northwest" = "olivedrab", "NA" = "grey"), na.translate = TRUE) +
   labs(title = "Distribución por Región", x = "Región", y = "Cantidad") +
   theme_minimal()
+DF %>%
+  group_by(region) %>%
+  summarise(Frecuencia = n(),
+            Proporcion = n() / nrow(DF) * 100)
+
+#tabals de contigencia
+tabla_contingencia <- table(DF$sex, DF$smoker)
+print(tabla_contingencia)
+
 
 #Asimetría y forma
 install.packages("psych")
@@ -332,4 +387,154 @@ ggplot(DF, aes(x = children, y = charges)) +
 numeric_df <- DF[, c("age", "bmi", "charges")]
 cor(numeric_df, use = "complete.obs")
 
+install.packages("ggplot2")
+install.packages("reshape2")
+library(ggplot2)
+library(reshape2)
+# Asegúrate de tener la matriz de correlación
+corr_matrix <- cor(numeric_df, use = "complete.obs")
+
+# Derretir la matriz de correlación
+melted_corr <- melt(corr_matrix)
+
+# Crear el gráfico con ggplot2
+ggplot(data = melted_corr, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile(color = "white") +  # color define el color de las líneas que separan los cuadros
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0, limit = c(-1, 1), space = "Lab") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+        axis.title = element_blank(),
+        panel.grid = element_blank(),
+        panel.border = element_blank()) +
+  coord_fixed()
+
+install.packages("corrplot")
+library(corrplot)
+# Asegúrate de tener la matriz de correlación
+corr_matrix <- cor(numeric_df, use = "complete.obs")
+
+# Visualizar la matriz de correlación
+corrplot(corr_matrix, method = "color", type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45, addCoef.col = "black")
+
+
+
+# Si aún no tienes fastDummies instalado:
+install.packages("fastDummies")
+library(fastDummies)
+
+# Convierte variables categóricas a dummies
+DF_dummies <- fastDummies::dummy_cols(DF, select_columns = c("sex", "smoker"))
+
+# Ahora DF_dummies tiene columnas adicionales para las variables categóricas
+# Puedes seleccionar las variables que quieres incluir en la correlación:
+variables_to_correlate <- c("age", "bmi", "charges", "sex_female", "sex_male", "smoker_yes", "smoker_no")
+numeric_and_dummies_df <- DF_dummies[variables_to_correlate]
+
+# Calcula la matriz de correlación
+corr_matrix <- cor(numeric_and_dummies_df, use = "pairwise.complete.obs")
+
+# Visualiza la matriz de correlación con corrplot
+corrplot(corr_matrix, method = "color")
+
 #falta todo lo de modelos, hipotesis y supuestos
+
+#Modelo de relación lineal 
+modelo_ajustado <- lm(charges ~ age, data = DF)
+summary(modelo_ajustado)
+
+#Validación de los supuestos
+residuales <- modelo_ajustado$residuals
+
+#Media cero # p-value = 1 es mayor que alfa entonces se cumple el supuesto de media cero
+t.test(residuales )
+
+plot(1:length(residuales), residuales, pch = 19, ylim = c(-15,15), type = "b" )
+abline(h = 0, lty = 2, col = 2)
+
+#Normalidad
+shapiro.test(residuales) # vp = 0.3263 es mayor que cero se cumple el supuesto
+
+#Independencia
+library(randtests)
+runs.test(residuales) #p-value = 0.5023 se cumple el supuesto de independencia
+
+#Homogeneidad
+library(skedastic)
+homoge <- lm(modelo_ajustado )
+
+#Multicolinealidad
+library("car")
+
+barplot( vif(m3),
+         main      = "VIF",
+         horiz     = FALSE,
+         col       = "steelblue",
+         cex.names = 0.8)
+abline(h = 2.5, lwd = 2, lty = 2, col='red')
+
+#Modelo de regresi?n cuadr?tica
+modelo.cuadratico = lm(n_paquetes ~ precio + precio2)
+summary(modelo.cuadratico)
+
+#Grafico de valores estimados
+plot(precio, n_paquetes, pch = 19)
+points(precio, modelo.precio$fitted.values, col = 2, pch = 19, cex = 2, type = "b")
+points(precio, modelo.cuadratico$fitted.values, col = 4, pch = 19, cex = 2, type = "b")
+
+ECM_ml <- sum(modelo.precio$residuals^2)/length(modelo.precio$residuals)
+ECM_mc <- sum(modelo.cuadratico$residuals^2)/length(modelo.cuadratico$residuals)
+
+RECM_ml <- sqrt(ECM_ml)
+RECM_mc <- sqrt(ECM_mc)
+
+EAM_ml <- sum( abs(modelo.precio$residuals) )/length(modelo.precio$residuals)
+EAM_mc <- sum( abs(modelo.cuadratico$residuals) )/length(modelo.cuadratico$residuals)
+
+#Reporte
+Resultados = cbind.data.frame("Metrica" = c ("ECM","RECM","EAM"),
+                              "Mod_Lineal" = c(ECM_ml,RECM_ml,EAM_ml),
+                              "Mod_Cuadratica" = c(ECM_mc,RECM_mc,EAM_mc))
+Resultados
+#Ajuste de un modelo de regresion multiple
+mod.multiple <- lm(y ~ x1+x2+x3+x4, data = Datos_multiple)
+summary(mod.multiple)
+
+#Verificar multicolinelidad
+library(car)
+vif(mod.multiple)
+
+
+mod.multiple2 <- lm(y ~ x1+x2+x3, data = Datos_multiple)
+summary(mod.multiple2)
+
+mod.multiple3 <- lm(y ~ x1+x2, data = Datos_multiple)
+summary(mod.multiple3)
+
+mod.multiple4 <- lm(y ~ x2, data = Datos_multiple)
+summary(mod.multiple4)
+
+
+#Validaci?n de supuestos sobre el modelo final
+residuales <- mod.multiple4$residuals
+
+#Media cero
+t.test(residuales)
+
+#Independencia
+#install.packages("randtests")
+library(randtests)
+runs.test(residuales)
+
+#Normalidad
+library(nortest)
+
+ad.test(residuales)
+shapiro.test(residuales)
+
+
+#Homogeneidad de varianzas
+install.packages("skedastic")
+library(skedastic)
+
+white_lm(mod.multiple4 )
