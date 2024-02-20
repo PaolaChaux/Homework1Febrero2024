@@ -34,9 +34,21 @@ setwd("P:/Estadistica y probabilidad 2/Homework1 febrero")
 # Listar los archivos en el directorio de trabajo
 dir()
 
-#Cargar los datos
+#Cargar los datos y limpieza
 df1 <- read_csv("dataset_HW1_insurance.csv")
-DF <- select(df1, -1)
+df2 <- select(df1, -1)
+print(df2)
+# Contar los valores NA por fila
+nas_por_fila <- rowSums(is.na(df2))
+# Filtrar las filas que tienen 3 o menos valores NA
+DF <- df2[nas_por_fila <= 3, ]
+print(DF)
+
+# Encuentra las filas con valores
+rows_NA <- apply(DF, 1, function(x) sum(is.na(x)) > 3)
+# Selecciona las filas 
+DF_with_NAs <- DF[rows_NA, ]
+print(DF_with_NAs)
 
 # Visualizar las primera filas del conjunto de datos
 head(DF)
@@ -48,6 +60,7 @@ sum(is.na(DF))
 
 # Visualizar los datos NA
 gg_miss_var(DF)
+
 na_plot <- gg_miss_var(DF)
 # Guardar el gráfico como un archivo PNG
 ggsave("na_plot.png", na_plot, width = 6, height = 4, dpi = 300)
@@ -176,7 +189,7 @@ print(outliersCHA)
 #Transformacion del DataFrame a alargo (porque?)
 DF_long <- DF %>%
   pivot_longer(
-    cols = c(age, bmi, children,charges), 
+    cols = c(age, bmi,charges), 
     names_to = "variable", 
     values_to = "value" )
 
@@ -247,8 +260,6 @@ ggplot(data = DF, aes(x = children, fill = children)) +
   scale_fill_viridis_d(begin = 0.3, end = 0.9, direction = 1, na.value = "grey") +
   labs(title = "Distribución del Número de Hijos", x = "Número de Hijos", y = "Cantidad") +
   theme_minimal()
-
-
 
 
 #CATEGORICAS - CUALITATIVAS
