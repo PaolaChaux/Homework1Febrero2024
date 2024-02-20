@@ -34,6 +34,7 @@ setwd("P:/Estadistica y probabilidad 2/Homework1 febrero")
 # Listar los archivos en el directorio de trabajo
 dir()
 
+
 #Cargar los datos y limpieza
 df1 <- read_csv("dataset_HW1_insurance.csv")
 df2 <- select(df1, -1)
