@@ -34,7 +34,6 @@ setwd("P:/Estadistica y probabilidad 2/Homework1 febrero")
 # Listar los archivos en el directorio de trabajo
 dir()
 
-
 #Cargar los datos y limpieza
 df1 <- read_csv("dataset_HW1_insurance.csv")
 df2 <- select(df1, -1)
@@ -207,15 +206,19 @@ IQR_bmi <- valAtipBmi$IQRBmi
 IQR_children <- valAtipCHI$IQRCHI
 IQR_charges <- valAtipCHA$IQRCHA
 
-# Reemplazar los valores NA con el IQR
+# Reemplazar los valores Atipicos con el IQR
 DF <- DF %>%
-  mutate(
-    age = replace(age, is.na(age), IQR_age),
-    bmi = replace(bmi, is.na(bmi), IQR_bmi),
-    children = replace(children, is.na(children), IQR_children),
-    charges = replace(charges, is.na(charges), IQR_charges))
-
+  mutate(age = ifelse(age < valAtipAge$LimInfAge | age > valAtipAge$LimSupAge, IQR_age, age),
+         bmi = ifelse(bmi < valAtipBmi$LimInfBmi | bmi > valAtipBmi$LimSupBmi, IQR_bmi, bmi),
+        children = ifelse(children < valAtipCHI$LimInfCHI | children > valAtipCHI$LimSupCHI, IQR_children, children),
+        charges = ifelse(charges < valAtipCHA$LimInfCHA | charges > valAtipCHA$LimSupCHA, IQR_charges, charges))
+    
 # Columnas cualitativas
+moda_sex <- DF %>%
+  filter(!is.na(sex)) %>%
+  count(sex) %>%
+  top_n(1,n) %>%
+  pull(sex)
 
 moda_fumador <- DF %>%
   filter(!is.na(smoker)) %>%
@@ -232,31 +235,40 @@ moda_region <- DF %>%
 # Reemplazar los NA con la moda
 DF <- DF %>%
   mutate(
+    sex = replace_na(sex, moda_sex),
     smoker = replace_na(smoker, moda_fumador),
     region = replace_na(region, moda_region))
-print(DF)
 
+# Calcular las medianas de las columnas
+mediana_age <- median(DF$age, na.rm = TRUE)
+mediana_bmi <- median(DF$bmi, na.rm = TRUE)
+mediana_children <- median(DF$children, na.rm = TRUE)
+mediana_charges <- median(DF$charges, na.rm = TRUE)
 
+# Reemplazar los valores NA en cada columna con su respectiva mediana
+DF <- DF %>%
+  mutate(
+    age = ifelse(is.na(age), mediana_age, age),
+    bmi = ifelse(is.na(bmi), mediana_bmi, bmi),
+    children = ifelse(is.na(children), mediana_children, children),
+    charges = ifelse(is.na(charges), mediana_charges, charges))
 
-#Creacion del boxplot con puntos individuales de datos 
-#Transformacion del DataFrame a alargo (porque?)
-DF_long <- DF %>%
-  pivot_longer(
-    cols = c(age, bmi,charges), 
-    names_to = "variable", 
-    values_to = "value" )
+write.xlsx(DF, "DF_resultante2.xlsx")
+
+#Cargar nuevo datset
+DF1 <- read.xlsx("DF_resultante2.xlsx")
 
 # Boxplot
 
-ggplot(DF, aes(x = sex, y = charges)) +
+ggplot(DF1, aes(x = sex, y = charges)) +
   geom_boxplot() +
   labs(title = "Charges por Sexo", x = "Sexo", y = "Charges")
 
-ggplot(DF, aes(x = smoker, y = charges)) +
+ggplot(DF1, aes(x = smoker, y = charges)) +
   geom_boxplot() +
   labs(title = "Charges por Fumador", x = "Fumador", y = "Charges")
 
-ggplot(DF, aes(x = region, y = charges)) +
+ggplot(DF1, aes(x = region, y = charges)) +
   geom_boxplot() +
   labs(title = "Charges por Región", x = "Región", y = "Charges")
 
@@ -265,22 +277,22 @@ ggplot(DF, aes(x = region, y = charges)) +
 
 #Graficos
 # Histograma Age
-ggplot(DF, aes(x = age)) + 
+ggplot(DF1, aes(x = age)) + 
   geom_histogram(bins = 30, fill = "lightblue", color = "black") +
   labs(title = "Distribución de la Edad", x = "Edad", y = "Frecuencia")
 
 # Histograma BMI
-ggplot(DF, aes(x = bmi)) + 
+ggplot(DF1, aes(x = bmi)) + 
   geom_histogram(bins = 30, fill = "lightgreen", color = "black") +
   labs(title = "Distribución del BMI", x = "BMI", y = "Frecuencia")
 
 # Histograma Charges
-ggplot(DF, aes(x = charges)) + 
+ggplot(DF1, aes(x = charges)) + 
   geom_histogram(bins = 30, fill = "pink", color = "black") +
   labs(title = "Distribución de los Cargos Médicos", x = "Cargos Médicos", y = "Frecuencia")
 
 # Gráfico de densidad Age
-ggplot(DF, aes(x = age)) + 
+ggplot(DF1, aes(x = age)) + 
   geom_density(fill = "lightblue", alpha = 0.5) +
   labs(title = "Densidad de la Edad", x = "Edad", y = "Densidad")
 
@@ -297,7 +309,7 @@ ggplot(DF, aes(x = charges)) +
 
 #Histogramas y Densidad en un solo grafico
 #age
-age_plot1 <- ggplot(data = DF, aes(x = age)) +
+age_plot1 <- ggplot(data = DF1, aes(x = age)) +
   geom_histogram(aes(y = ..density..), bins = 30, fill = "lightblue", alpha = 0.5) +
   geom_density(color = "blue", alpha = 0.7) +
   labs(title = "Distribución y Densidad de la Edad", x = "Edad", y = "Densidad")
@@ -306,7 +318,7 @@ print(age_plot1)
 ggsave("age.png", age_plot1, width = 8, height = 6, dpi = 300)
 
 #children
-age_plot2 <-ggplot(data = DF, aes(x = children)) +
+age_plot2 <-ggplot(data = DF1, aes(x = children)) +
   geom_histogram(aes(y = ..density..), bins = 30, fill = "lightgreen", alpha = 0.5) +
   geom_density(color = "darkgreen", alpha = 0.7) +
   labs(title = "Distribución y Densidad del Número de Hijos", x = "Número de Hijos", y = "Densidad")
@@ -314,7 +326,7 @@ ggsave("age2.png", age_plot2, width = 8, height = 6, dpi = 300)
 print(age_plot2)
 
 #bmi
-age_plot3 <-ggplot(data = DF, aes(x = bmi)) +
+age_plot3 <-ggplot(data = DF1, aes(x = bmi)) +
   geom_histogram(aes(y = ..density..), bins = 30, fill = "pink", alpha = 0.5) +
   geom_density(color = "red", alpha = 0.7) +
   labs(title = "Distribución y Densidad del BMI", x = "BMI", y = "Densidad")
@@ -322,15 +334,15 @@ print(age_plot3)
 ggsave("age3.png", age_plot3, width = 8, height = 6, dpi = 300)
 
 #charges
-age_plot4 <-ggplot(data = DF, aes(x = charges)) +
+age_plot4 <-ggplot(data = DF1, aes(x = charges)) +
   geom_histogram(aes(y = ..density..), binwidth = 500, fill = "purple", alpha = 0.5) +
   geom_density(alpha = 0.7)
 print(age_plot4)
 ggsave("age4.png", age_plot4, width = 8, height = 6, dpi = 300)
 
 #Gráfico de barras para la variable children 
-GBchildren <- DF$children <- factor(DF$children, exclude = NULL)
-GBchildren <- ggplot(data = DF, aes(x = children, fill = children)) +
+GBchildren <- DF1$children <- factor(DF1$children, exclude = NULL)
+GBchildren <- ggplot(data = DF1, aes(x = children, fill = children)) +
   geom_bar() +
   scale_fill_viridis_d(begin = 0.3, end = 0.9, direction = 1, na.value = "grey") +
   labs(title = "Distribución del Número de Hijos", x = "Número de Hijos", y = "Cantidad") +
@@ -341,55 +353,55 @@ ggsave("grbach.png", GBchildren, width = 8, height = 6, dpi = 300)
 #CATEGORICAS - CUALITATIVAS
 
 # Gráfico de barras para la variable sex
-grbsex <- DF$sex <- factor(DF$sex, exclude = NULL)
+grbsex <- DF$sex <- factor(DF1$sex, exclude = NULL)
 grbsex <- ggplot(data = DF, aes(x = sex, fill = sex)) +
   geom_bar() +
   scale_fill_manual(values = c("female" = "pink", "male" = "lightblue", "NA" = "grey"), na.translate = TRUE) +
   labs(title = "Distribución del Sexo", x = "Sexo", y = "Cantidad") +
   theme_minimal()
-print(gsex <- DF %>%
+print(gsex <- DF1 %>%
   group_by(sex) %>%
   summarise(Frecuencia = n(),
-            Proporcion = n() / nrow(DF) * 100))
+            Proporcion = n() / nrow(DF1) * 100))
 print(grbsex)
 write.xlsx(gsex, "gsex.xlsx")
 xtable(gsex)
 ggsave("grbsex.png", grbsex, width = 8, height = 6, dpi = 300)
 
 # Gráfico de barras para la variable smoker
-grbsmo <- DF$smoker <- factor(DF$smoker, exclude = NULL)
+grbsmo <- DF1$smoker <- factor(DF1$smoker, exclude = NULL)
 grbsmo <- ggplot(data = DF, aes(x = smoker, fill = smoker)) +
   geom_bar() +
   scale_fill_manual(values = c("yes" = "orange", "no" = "lightgreen", "NA" = "grey"), na.translate = TRUE) +
   labs(title = "Distribución de Fumadores", x = "Fumador", y = "Cantidad") +
   theme_minimal()
-print(gsmo <- DF %>%
+print(gsmo <- DF1 %>%
   group_by(smoker) %>%
   summarise(Frecuencia = n(),
-            Proporcion = n() / nrow(DF) * 100))
+            Proporcion = n() / nrow(DF1) * 100))
 print(grbsmo)
 write.xlsx(gsex, "gsmo.xlsx")
 xtable(gsmo)
 ggsave("grbsmo.png", grbsmo, width = 8, height = 6, dpi = 300)
 
 # Gráfico de barras para la variable región
-grbreg <- DF$region <- factor(DF$region, exclude = NULL)
+grbreg <- DF1$region <- factor(DF1$region, exclude = NULL)
 grbreg <- ggplot(data = DF, aes(x = region, fill = region)) +
   geom_bar() +
   scale_fill_manual(values = c("northeast" = "steelblue", "southeast" = "gold", "southwest" = "coral", "northwest" = "olivedrab", "NA" = "grey"), na.translate = TRUE) +
   labs(title = "Distribución por Región", x = "Región", y = "Cantidad") +
   theme_minimal()
-print(greg <- DF %>%
+print(greg <- DF1 %>%
   group_by(region) %>%
   summarise(Frecuencia = n(),
-            Proporcion = n() / nrow(DF) * 100))
+            Proporcion = n() / nrow(DF1) * 100))
 print(grbreg)
 write.xlsx(greg, "greg.xlsx")
 xtable(greg)
 ggsave("grbreg.png", grbreg, width = 8, height = 6, dpi = 300)
 
 #tabals de contigencia
-tabla_contingencia <- table(DF$sex, DF$smoker)
+tabla_contingencia <- table(DF1$sex, DF1$smoker)
 print(tabla_contingencia)
 
 
@@ -398,25 +410,25 @@ install.packages("psych")
 library(psych)
 
 #Coeficiente de asimetría
-skew(DF$age)
-skew(DF$bmi)
-DF$children <- as.numeric(as.character(DF$children))
-skew(DF$children)
-skew(DF$charges)
+skew(DF1$age)
+skew(DF1$bmi)
+DF1$children <- as.numeric(as.character(DF1$children))
+skew(DF1$children)
+skew(DF1$charges)
 
 skewness_results <- data.frame(
   Variable = c("Edad", "BMI", "Hijos", "Cargos"),
-  Asimetria = c(skew(DF$age), skew(DF$bmi), skew(DF$children), skew(DF$charges)))
+  Asimetria = c(skew(DF1$age), skew(DF1$bmi), skew(DF1$children), skew(DF1$charges)))
 #dataframe a tabla
 latex_table <- xtable(skewness_results, caption = "Asimetría de las Variables")
 print(latex_table, type = "latex", caption.placement = "top", include.rownames = FALSE)
 
 
 #Coeficiente de curtosis
-kurt_age <- kurtosi(DF$age)
-kurt_bmi <- kurtosi(DF$bmi)
-kurt_children <- kurtosi(DF$children)
-kurt_charges <- kurtosi(DF$charges)
+kurt_age <- kurtosi(DF1$age)
+kurt_bmi <- kurtosi(DF1$bmi)
+kurt_children <- kurtosi(DF1$children)
+kurt_charges <- kurtosi(DF1$charges)
 print(kurt_age)
 print(kurt_bmi)
 print(kurt_children)
@@ -472,7 +484,7 @@ ggplot(DF, aes(x = children, y = charges)) +
   theme_ipsum()
 
 #Correlación muestra (r = 0.8397859)
-numeric_df <- DF[, c("age", "bmi", "charges")]
+numeric_df <- DF1[, c("age", "bmi", "charges")]
 cor(numeric_df, use = "complete.obs")
 
 install.packages("ggplot2")
@@ -505,16 +517,13 @@ corr_matrix <- cor(numeric_df, use = "complete.obs")
 corrplot(corr_matrix, method = "color", type = "upper", order = "hclust", 
          tl.col = "black", tl.srt = 45, addCoef.col = "black")
 
-
-
 install.packages("fastDummies")
 library(fastDummies)
 
 # Convierte variables categóricas a dummies
-DF_dummies <- fastDummies::dummy_cols(DF, select_columns = c("sex", "smoker"))
+DF_dummies <- fastDummies::dummy_cols(DF1, select_columns = c("sex", "smoker"))
 
 # Ahora DF_dummies tiene columnas adicionales para las variables categóricas
-# Puedes seleccionar las variables que quieres incluir en la correlación:
 variables_to_correlate <- c("age", "bmi", "children", "charges", "sex_female", "sex_male", "smoker_yes", "smoker_no")
 numeric_and_dummies_df <- DF_dummies[variables_to_correlate]
 
@@ -524,9 +533,43 @@ corr_matrix <- cor(numeric_and_dummies_df, use = "pairwise.complete.obs")
 # Visualiza la matriz de correlación con corrplot
 corrplot(corr_matrix, method = "color")
 
-#MODELO
+#MODELOq
+#Ajuste de modelo
+modelo1 <- lm(charges ~ age + smoker + children + bmi + region + sex , data = DF1 )
+summary(modelo1)
+
+modelo2 <- lm(charges ~ age + smoker, data = DF1 )
+summary(modelo2)
+
+modelo3 <- lm(charges ~ age , data = DF1 )
+summary(modelo3)
+
+modelo4 <- lm(charges ~ age + smoker + children + bmi + sex , data = DF1 )
+summary(modelo4)
+
+modelo5 <- lm(charges ~ age + smoker + children + sex , data = DF1 )
+summary(modelo5)
+
+modelo6 <- lm(charges ~ age +smoker + sex, data = DF1 )
+summary(modelo6)
+
+cor(DF1$charges,DF1$age)
+cor(DF1$charges,DF1$bmi)
+cor(DF1$charges,DF1$children)
+
+
+xtable(summary(modelo1))
+
+print(DF1)
+par(mfrow = c(2,2))
+plot(charges ~ age, data = DF1)
+plot(charges ~ bmi, data = DF1)
+plot(charges ~ children, data = DF1)
 
 #Multicolinealidad
+#Verificar multicolinelidad
+library(car)
+vif(mod.multiple)
 library("car")
 
 barplot( vif(m3),
@@ -537,7 +580,7 @@ barplot( vif(m3),
 abline(h = 2.5, lwd = 2, lty = 2, col='red')
 
 #Modelo de regresi?n cuadr?tica
-modelo.cuadratico = lm(n_paquetes ~ precio + precio2)
+modelo.cuadratico = lm(charges ~ age + smoker)
 summary(modelo.cuadratico)
 
 #Grafico de valores estimados
