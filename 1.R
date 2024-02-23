@@ -27,6 +27,7 @@ library(knitr)
 library(kableExtra)
 library(tibble)
 library(openxlsx)
+library(xtable)
 
 #Fijar el directorio de trabajo
 setwd("P:/Estadistica y probabilidad 2/Homework1 febrero")
@@ -34,44 +35,85 @@ setwd("P:/Estadistica y probabilidad 2/Homework1 febrero")
 # Listar los archivos en el directorio de trabajo
 dir()
 
-#Cargar los datos y limpieza
+#Cargar los datos
 df1 <- read_csv("dataset_HW1_insurance.csv")
 df2 <- select(df1, -1)
 print(df2)
-# Contar los valores NA por fila
-nas_por_fila <- rowSums(is.na(df2))
-# Filtrar las filas que tienen 3 o menos valores NA
-DF <- df2[nas_por_fila <= 3, ]
-print(DF)
-
-# Encuentra las filas con valores
-rows_NA <- apply(DF, 1, function(x) sum(is.na(x)) > 3)
-# Selecciona las filas 
-DF_with_NAs <- DF[rows_NA, ]
-print(DF_with_NAs)
 
 #revisar numeros de filas 
-nrow(DF)
+nrow(df2)
 
+# Visualizar conjunto de datos
+head(df2)
+latex_table <- xtable(head(df2))
+print(latex_table, type = "latex", include.rownames = TRUE)
+
+# Verificar datos faltantes
+# Convertir las columnas categóricas a factores
+df2$sex <- as.factor(df2$sex)
+df2$smoker <- as.factor(df2$smoker)
+df2$region <- as.factor(df2$region)
+summary(df2)
+
+# Visualizar los datos NA
+gg_miss_var(df2)
+na_plot <- gg_miss_var(df2)
+# Guardar el gráfico como un archivo PNG
+ggsave("na_plot.png", na_plot, width = 6, height = 4, dpi = 300)
+
+# Total de valores NA en el dataset
+total_na <- df2 %>% 
+  summarise_all(~sum(is.na(.))) %>% 
+  unlist() %>% 
+  sum()
+print(total_na)
+
+# Verificar si hay cadenas vacías en todas las columnas del dataframe
+sapply(df2, function(x) any(x == "", na.rm = TRUE))
+
+# REMPLAZO DE LOS NA'S PARA LA ANALITICA
+moda_sex <- df2 %>%
+  filter(!is.na(sex)) %>%
+  count(sex) %>%
+  top_n(1,n) %>%
+  pull(sex)
+
+moda_fumador <- df2 %>%
+  filter(!is.na(smoker)) %>%
+  count(smoker) %>%
+  top_n(1, n) %>%
+  pull(smoker)
+
+moda_region <- df2 %>%
+  filter(!is.na(region)) %>%
+  count(region) %>%
+  top_n(1, n) %>%
+  pull(region)
+
+moda_children <- df2 %>%
+  filter(!is.na(children)) %>%
+  count(children) %>%
+  top_n(1, n) %>%
+  pull(children)
+
+media_age <- mean(DF$age, na.rm = TRUE)
+media_bmi <- mean(DF$bmi, na.rm = TRUE)
+media_charges <- mean(DF$charges, na.rm = TRUE)
+
+# Reemplazar los NA con la moda,media.
+DF <- df2 %>%
+  mutate(
+    sex = replace_na(sex, moda_sex),
+    smoker = replace_na(smoker, moda_fumador),
+    region = replace_na(region, moda_region),
+    age = ifelse(is.na(age), media_age, age),
+    bmi = ifelse(is.na(bmi), media_bmi, bmi),
+    children = ifelse(is.na(children), moda_children, children),
+    charges = ifelse(is.na(charges), media_charges, charges))
 # Visualizar conjunto de datos
 head(DF)
 latex_table <- xtable(head(DF))
 print(latex_table, type = "latex", include.rownames = TRUE)
-
-# Verificar datos faltantes
-summary(DF)
-
-# Visualizar los datos NA
-gg_miss_var(DF)
-
-na_plot <- gg_miss_var(DF)
-# Guardar el gráfico como un archivo PNG
-ggsave("na_plot.png", na_plot, width = 6, height = 4, dpi = 300)
-
-# Verificar si hay cadenas vacías en todas las columnas del dataframe
-sapply(DF, function(x) any(x == ""))
-sapply(DF, function(x) any(x == "", na.rm = TRUE))
-
 
 #Estadísticas descriptivas
 #age
@@ -103,8 +145,6 @@ write.xlsx(tabla_2, "Tabla_bmi.xlsx")
 xtable(tabla_2)
 
 #Children
-DF$children <- as.numeric(as.character(DF$children))
-
 tabla_3 <- DF %>%
   dplyr::reframe(
     Prom    = round(mean(children, na.rm = TRUE), 0),
@@ -207,73 +247,46 @@ IQR_children <- valAtipCHI$IQRCHI
 IQR_charges <- valAtipCHA$IQRCHA
 
 # Reemplazar los valores Atipicos con el IQR
-DF <- DF %>%
-  mutate(age = ifelse(age < valAtipAge$LimInfAge | age > valAtipAge$LimSupAge, IQR_age, age),
-         bmi = ifelse(bmi < valAtipBmi$LimInfBmi | bmi > valAtipBmi$LimSupBmi, IQR_bmi, bmi),
-        children = ifelse(children < valAtipCHI$LimInfCHI | children > valAtipCHI$LimSupCHI, IQR_children, children),
-        charges = ifelse(charges < valAtipCHA$LimInfCHA | charges > valAtipCHA$LimSupCHA, IQR_charges, charges))
-    
-# Columnas cualitativas
-moda_sex <- DF %>%
-  filter(!is.na(sex)) %>%
-  count(sex) %>%
-  top_n(1,n) %>%
-  pull(sex)
+DF1 <- DF %>%
+  mutate(age = ifelse(age < valAtipAge$LimInfAge, valAtipAge$LimInfAge,
+                      ifelse(age > valAtipAge$LimSupAge, valAtipAge$LimSupAge, age)),
+         bmi = ifelse(bmi < valAtipBmi$LimInfBmi, valAtipBmi$LimInfBmi,
+                      ifelse(bmi > valAtipBmi$LimSupBmi, valAtipBmi$LimSupBmi, bmi)),
+         children = ifelse(children < valAtipCHI$LimInfCHI, valAtipCHI$LimInfCHI,
+                           ifelse(children > valAtipCHI$LimSupCHI, valAtipCHI$LimSupCHI, children)),
+         charges = ifelse(charges < valAtipCHA$LimInfCHA, valAtipCHA$LimInfCHA,
+                          ifelse(charges > valAtipCHA$LimSupCHA, valAtipCHA$LimSupCHA, charges)))
 
-moda_fumador <- DF %>%
-  filter(!is.na(smoker)) %>%
-  count(smoker) %>%
-  top_n(1, n) %>%
-  pull(smoker)
+write.xlsx(DF1, "DF1.xlsx")    
 
-moda_region <- DF %>%
-  filter(!is.na(region)) %>%
-  count(region) %>%
-  top_n(1, n) %>%
-  pull(region)
-
-# Reemplazar los NA con la moda
-DF <- DF %>%
-  mutate(
-    sex = replace_na(sex, moda_sex),
-    smoker = replace_na(smoker, moda_fumador),
-    region = replace_na(region, moda_region))
-
-# Calcular las medianas de las columnas
-mediana_age <- median(DF$age, na.rm = TRUE)
-mediana_bmi <- median(DF$bmi, na.rm = TRUE)
-mediana_children <- median(DF$children, na.rm = TRUE)
-mediana_charges <- median(DF$charges, na.rm = TRUE)
-
-# Reemplazar los valores NA en cada columna con su respectiva mediana
-DF <- DF %>%
-  mutate(
-    age = ifelse(is.na(age), mediana_age, age),
-    bmi = ifelse(is.na(bmi), mediana_bmi, bmi),
-    children = ifelse(is.na(children), mediana_children, children),
-    charges = ifelse(is.na(charges), mediana_charges, charges))
-
-write.xlsx(DF, "DF_resultante2.xlsx")
 
 #Cargar nuevo datset
-DF1 <- read.xlsx("DF_resultante2.xlsx")
+DF1 <- read.xlsx("DF1.xlsx")
 
 # Boxplot
 
-ggplot(DF1, aes(x = sex, y = charges)) +
+boxsex <- ggplot(DF1, aes(x = sex, y = charges)) +
   geom_boxplot() +
-  labs(title = "Charges por Sexo", x = "Sexo", y = "Charges")
+  labs(title = "Charges- Sex", x = "Sex", y = "Charges")
+ggsave("boxsex.png", plot = boxsex, width = 8, height = 6, dpi = 300)
 
-ggplot(DF1, aes(x = smoker, y = charges)) +
+boxsmoker <- ggplot(DF1, aes(x = smoker, y = charges)) +
   geom_boxplot() +
-  labs(title = "Charges por Fumador", x = "Fumador", y = "Charges")
+  labs(title = "Charges-smoker", x = "Smoker", y = "Charges")
+ggsave("boxsmoker.png", plot = boxsmoker, width = 8, height = 6, dpi = 300)
 
-ggplot(DF1, aes(x = region, y = charges)) +
+
+boxregion <- ggplot(DF1, aes(x = region, y = charges)) +
   geom_boxplot() +
-  labs(title = "Charges por Región", x = "Región", y = "Charges")
+  labs(title = "Charges- Region", x = "Region", y = "Charges")
+print(boxregion)
+ggsave("boxregion.png", plot = boxregion, width = 8, height = 6, dpi = 300)
 
-
-
+boxchildren <- ggplot(DF1, aes(x = factor(children), y = charges)) +
+  geom_boxplot() +
+  labs(title = "Charges - Children", x = "Children", y = "Charges")
+print(boxchildren)
+ggsave("boxchildren.png", plot = boxchildren, width = 8, height = 6, dpi = 300)
 
 #Graficos
 # Histograma Age
@@ -345,10 +358,17 @@ GBchildren <- DF1$children <- factor(DF1$children, exclude = NULL)
 GBchildren <- ggplot(data = DF1, aes(x = children, fill = children)) +
   geom_bar() +
   scale_fill_viridis_d(begin = 0.3, end = 0.9, direction = 1, na.value = "grey") +
-  labs(title = "Distribución del Número de Hijos", x = "Número de Hijos", y = "Cantidad") +
+  labs(title = "Distribución de Children", x = "Número de Hijos", y = "Cantidad") +
   theme_minimal()
 print(GBchildren)
 ggsave("grbach.png", GBchildren, width = 8, height = 6, dpi = 300)
+print(greg <- DF1 %>%
+        group_by(children) %>%
+        summarise(Frecuencia = n(),
+                  Proporcion = n() / nrow(DF1) * 100))
+print(grbreg)
+write.xlsx(greg, "greg.xlsx")
+xtable(greg)
 
 #CATEGORICAS - CUALITATIVAS
 
@@ -380,7 +400,7 @@ print(gsmo <- DF1 %>%
   summarise(Frecuencia = n(),
             Proporcion = n() / nrow(DF1) * 100))
 print(grbsmo)
-write.xlsx(gsex, "gsmo.xlsx")
+write.xlsx(gsmo, "gsmo.xlsx")
 xtable(gsmo)
 ggsave("grbsmo.png", grbsmo, width = 8, height = 6, dpi = 300)
 
@@ -404,6 +424,23 @@ ggsave("grbreg.png", grbreg, width = 8, height = 6, dpi = 300)
 tabla_contingencia <- table(DF1$sex, DF1$smoker)
 print(tabla_contingencia)
 
+# Categorizar 'charges'
+DF1$charges_cat <- cut(DF1$charges, breaks = c(-Inf, 10000, 20000, Inf), labels = c("bajo", "medio", "alto"))
+# Crear tabla de contingencia
+table_smoker_charges <- table(DF1$smoker, DF1$charges_cat)
+table_region_charges <- table(DF$region, DF1$charges_cat)
+table_sex_charges <- table(DF1$sex, DF1$charges_cat)
+DF1$children_cat <- cut(DF1$children, breaks = c(-1, 0, 2, Inf), labels = c("0 hijos", "1-2 hijos", "3+ hijos"))
+table_children_charges <- table(DF1$children_cat, DF1$charges_cat)
+print(table_smoker_charges)
+print(table_sex_charges) 
+print(table_children_charges)
+write.xlsx(table_smoker_charges, "contigencia-smoker-charges.xlsx")
+xtable(table_smoker_charges)
+write.xlsx(table_region_charges, "contigencia-region-charges.xlsx")
+xtable(table_region_charges)
+write.xlsx(table_sex_charges, "contigencia-sex-charges.xlsx")
+xtable(table_sex_charges)
 
 #Asimetría y forma
 install.packages("psych")
@@ -440,12 +477,12 @@ curtosis_df <- data.frame(
 curtosis <- xtable(curtosis_df, caption = "Curtosis de las Variables")
 print(curtosis, comment = FALSE, booktabs = TRUE)
 
-
-
+DF3 <- read.xlsx("DF1.xlsx")
 #Correlacioness
 #Diagrama de dispersion
+colnames(DF3)
 #Charges y Age
-ggplot(DF, aes(x = age, y = charges)) + 
+cor-charges-age <- ggplot(DF3, aes(x = age, y = charges)) + 
   geom_point(
     color = "black",
     fill = "#69b3a2",
@@ -456,9 +493,10 @@ ggplot(DF, aes(x = age, y = charges)) +
   ) +
   labs(title = "Relación entre Edad y Cargos Médicos", x = "Edad", y = "Cargos Médicos") +
   theme_ipsum()
+ggsave("cor-charges-age.png", cor-charges-age, width = 8, height = 6, dpi = 300)
 
 #charges y bmi
-ggplot(DF, aes(x = bmi, y = charges)) + 
+cor-charges-bmi <- ggplot(DF1, aes(x = bmi, y = charges)) + 
   geom_point(
     color = "black",
     fill = "#69b3a2",
@@ -469,8 +507,9 @@ ggplot(DF, aes(x = bmi, y = charges)) +
   ) +
   labs(title = "Relación entre BMI y Cargos Médicos", x = "BMI", y = "Cargos Médicos") +
   theme_ipsum()
+ggsave("cor-charges-bmi.png", cor-charges-bmi, width = 8, height = 6, dpi = 300)
 
-#charges y children(este para mi no tiene ssentido o alguna importnacia porque son numeros enteros)
+#charges y children
 ggplot(DF, aes(x = children, y = charges)) + 
   geom_point(
     color = "black",
