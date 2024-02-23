@@ -546,7 +546,7 @@ install.packages("corrplot")
 library(corrplot)
 library(fastDummies)
 # Columnas dummy
-DFDUMMY <- dummy_cols(DF3, select_columns = c("sex", "smoker", "region"), remove_selected_columns = TRUE)
+DFDUMMY <- dummy_cols(DF1, select_columns = c("sex", "smoker", "region"), remove_selected_columns = TRUE)
 head(DFDUMMY)
 # Ver el dataframe en ventana 
 View(DFDUMMY)
@@ -571,10 +571,8 @@ dev.off()
 # Columnas numéricas y dummy
 numeric <- c("age", "bmi", "children", "charges")
 dummy <- c("sex_male", "sex_female", "smoker_yes", "smoker_no", "region_northeast", "region_northwest", "region_southeast", "region_southwest")
-
 # Inicializar el dataframe de interacciones con el mismo número de filas que DFDUMMY
 dataInter <- data.frame(matrix(ncol = 0, nrow = nrow(DFDUMMY)))
-
 # Calcular las interacciones entre las columnas dummies y las numéricas
 for(num in numeric) {
   for(dum in dummy) {
@@ -584,8 +582,8 @@ DFFINAL <- cbind(DFDUMMY, dataInter)
 print(DFFINAL)
 ncol(DFFINAL)
 
-# Calcular la matriz de correlaciones
-corr_matrix <- cor(dataInter, use = "pairwise.complete.obs")
+# Calcular la matriz de correlaciones con solo las dummy
+corr_matrix1 <- cor(dataInter, use = "pairwise.complete.obs")
 # márgenes y el tamaño de la fuente
 par(mar=c(0,0,1,0)) 
 corrplot(corr_matrix, method = "color", tl.cex = 0.6, tl.col = "black", cl.cex = 0.7, addgrid.col = "gray")
@@ -594,14 +592,14 @@ png("corrplot_large.png", width = 1200, height = 1200, res = 200)
 corrplot(corr_matrix, method = "color", tl.cex = 0.6, tl.col = "black", cl.cex = 0.7, addgrid.col = "gray")
 dev.off()
 
-# Calcular la matriz de correlaciones
-corr_matrix <- cor(DFFINAL, use = "pairwise.complete.obs")
+# Calcular la matriz de correlaciones las 44 variables
+corr_matrix2 <- cor(DFFINAL, use = "pairwise.complete.obs")
 # márgenes y el tamaño de la fuente
 par(mar=c(0,0,1,0)) 
-corrplot(corr_matrix, method = "color", tl.cex = 0.6, tl.col = "black", cl.cex = 0.7, addgrid.col = "gray")
+corrplot(corr_matrix2, method = "color", tl.cex = 0.6, tl.col = "black", cl.cex = 0.7, addgrid.col = "gray")
 # Guardar la imagen con un tamaño más grande
-png("corrplot_large.png", width = 1200, height = 1200, res = 200)
-corrplot(corr_matrix, method = "color", tl.cex = 0.6, tl.col = "black", cl.cex = 0.7, addgrid.col = "gray")
+png("corrplot_large2.png", width = 1200, height = 1200, res = 200)
+corrplot(corr_matrix2, method = "color", tl.cex = 0.6, tl.col = "black", cl.cex = 0.7, addgrid.col = "gray")
 dev.off()
 
 
@@ -617,66 +615,55 @@ vif_altos <- vif_modelo1[vif_modelo1 > 5]
 print(vif_altos)
 
 modelot <- lm(charges ~ smoker_no + sex_male_age + sex_male_charges + sex_female_charges + smoker_yes_charges, data = DFFINAL)
-summary(modelot)
+summary(modelot) #1
 
 modelo2 <- lm(charges ~ age + smoker_yes_age + smoker_yes_bmi + smoker_no_bmi + smoker_no + smoker_yes_children + smoker_no_age + sex_female_children + smoker_yes_charges +sex_male_charges+ region_southwest_charges,  data = DFFINAL )
-summary(modelo2)
+summary(modelo2) #64.85
 vif_modelo2 <- vif(modelo2)
 print(vif_modelo2)
 vif_altos <- vif_modelo2[vif_modelo2 > 5]
 print(vif_altos)
 
-modelo3 <- lm(charges ~ age , data = DF1 )
-summary(modelo3)
-
 modelo4 <- lm(charges ~ age + smoker_yes_age + smoker_yes_bmi + smoker_no_bmi + smoker_yes_children + sex_female_children + smoker_yes_charges +sex_male_charges+ region_southwest_charges,  data = DFFINAL )
-summary(modelo4)
+summary(modelo4) #64.87
 
 modelo_sencillo <- lm(charges ~ age + bmi + children + smoker_yes + sex_female + region_northeast + region_northwest + region_southeast, data = DFFINAL)
-summary(modelo_sencillo)
+summary(modelo_sencillo) #39.08
 
 modelo5 <- lm(charges ~ age + smoker_yes_age + smoker_yes_bmi + smoker_no_bmi + smoker_no + smoker_yes_children + smoker_no_age + sex_female_children + smoker_yes_charges +sex_male_charges+ region_southwest_charges+ smoker_no_bmi,  data = DFFINAL )
-summary(modelo5)
+summary(modelo5) #64.85
 
 modelo6 <- lm(charges ~  smoker_yes_age + smoker_yes_children  + sex_female_children + smoker_yes_charges+ age +sex_male_charges+ region_southwest_charges, data = DFFINAL )
-summary(modelo6)
+summary(modelo6) #64.9
 
-modelo6 <- lm(charges ~  age + smoker_yes_age + smoker_yes_children  + sex_female_children, data = DFFINAL )
-summary(modelo6)
+modelo30 <- lm(charges ~  age + smoker_yes_age + smoker_yes_children  + sex_female_children, data = DFFINAL )
+summary(modelo30) #33.28
 
 m7 <- lm(charges ~ ., data = DFFINAL)
 summary(m7)
 
 modelo8 <- lm(charges ~ age + smoker_yes + children + bmi + sex_female + sex_female_age + region_northeast + region_northwest + region_southeast + smoker_yes_age + smoker_yes_bmi + smoker_yes_children + sex_male_charges + sex_female_charges + smoker_yes_charges + region_northeast_charges + region_northwest_charges + region_southeast_charges, data = DFFINAL )
-summary(modelo8)
+summary(modelo8) #1
 vif_modelo8 <- vif(modelo8)
 print(vif_modelo8)
 vif_altos <- vif_modelo8[vif_modelo8 > 5]
 print(vif_altos)
 
 modelo9 <- lm(charges ~ age + smoker_yes + children + bmi + sex_female + sex_female_age + smoker_yes_age + smoker_yes_bmi + smoker_yes_children + sex_male_charges + sex_female_charges + smoker_yes_charges + region_northeast_charges + region_northwest_charges + region_southeast_charges, data = DFFINAL )
-summary(modelo9)
+summary(modelo9) #1
 
 modelo10 <- lm(charges ~ age + smoker_yes + children + bmi + sex_female + smoker_yes_age + smoker_yes_bmi + smoker_yes_children + sex_male_charges + sex_female_charges + smoker_yes_charges + region_southeast_charges, data = DFFINAL )
-summary(modelo10)
-
-modelo11 <- lm(charges ~ sex_male_charges + sex_female_charges, data = DFFINAL )
-summary(modelo11)
-vif_modelo11 <- vif(modelo11)
-print(vif_modelo11)
-vif_altos <- vif_modelo11[vif_modelo11 > 5]
-print(vif_altos)
+summary(modelo10)#1
 
 modelo <- lm(charges ~ smoker_yes_age + smoker_no_children + smoker_yes_children + smoker_no_bmi + smoker_yes_bmi + smoker_no_age + smoker_yes_age + smoker_yes, data = DFFINAL )
-summary(modelo)
+summary(modelo)#40.6
 
 modelop <- lm(charges ~ age + smoker_yes +  region_northeast + region_southwest + smoker_yes_age + smoker_yes_bmi, data = DFFINAL )
-summary(modelop)
+summary(modelop)#40.71
 
 cor(DF1$charges,DF1$age)
 cor(DF1$charges,DF1$bmi)
 cor(DF1$charges,DF1$children)
-
 
 xtable(summary(modelo1))
 
