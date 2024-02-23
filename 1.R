@@ -71,53 +71,10 @@ print(total_na)
 # Verificar si hay cadenas vacías en todas las columnas del dataframe
 sapply(df2, function(x) any(x == "", na.rm = TRUE))
 
-# REMPLAZO DE LOS NA'S PARA LA ANALITICA
-moda_sex <- df2 %>%
-  filter(!is.na(sex)) %>%
-  count(sex) %>%
-  top_n(1,n) %>%
-  pull(sex)
-
-moda_fumador <- df2 %>%
-  filter(!is.na(smoker)) %>%
-  count(smoker) %>%
-  top_n(1, n) %>%
-  pull(smoker)
-
-moda_region <- df2 %>%
-  filter(!is.na(region)) %>%
-  count(region) %>%
-  top_n(1, n) %>%
-  pull(region)
-
-moda_children <- df2 %>%
-  filter(!is.na(children)) %>%
-  count(children) %>%
-  top_n(1, n) %>%
-  pull(children)
-
-media_age <- mean(DF$age, na.rm = TRUE)
-media_bmi <- mean(DF$bmi, na.rm = TRUE)
-media_charges <- mean(DF$charges, na.rm = TRUE)
-
-# Reemplazar los NA con la moda,media.
-DF <- df2 %>%
-  mutate(
-    sex = replace_na(sex, moda_sex),
-    smoker = replace_na(smoker, moda_fumador),
-    region = replace_na(region, moda_region),
-    age = ifelse(is.na(age), media_age, age),
-    bmi = ifelse(is.na(bmi), media_bmi, bmi),
-    children = ifelse(is.na(children), moda_children, children),
-    charges = ifelse(is.na(charges), media_charges, charges))
-# Visualizar conjunto de datos
-head(DF)
-latex_table <- xtable(head(DF))
-print(latex_table, type = "latex", include.rownames = TRUE)
 
 #Estadísticas descriptivas
 #age
-tabla_1 <-DF %>%
+tabla_1 <-df2 %>%
   dplyr::reframe(
     Prom    = mean(age, na.rm = TRUE),
     Mediana = median(age, na.rm = TRUE),
@@ -132,7 +89,7 @@ library(xtable)
 xtable(tabla_1)
 
 #BMI
-tabla_2 <- DF %>%
+tabla_2 <- df2 %>%
   dplyr::reframe(Prom    = mean(bmi, na.rm = TRUE),
                    Mediana = median(bmi, na.rm = TRUE),
                    Moda = mfv(bmi, na_rm = TRUE),
@@ -145,7 +102,7 @@ write.xlsx(tabla_2, "Tabla_bmi.xlsx")
 xtable(tabla_2)
 
 #Children
-tabla_3 <- DF %>%
+tabla_3 <- df2 %>%
   dplyr::reframe(
     Prom    = round(mean(children, na.rm = TRUE), 0),
     Mediana = median(children, na.rm = TRUE),
@@ -159,7 +116,7 @@ write.xlsx(tabla_3, "Tabla_chi.xlsx")
 xtable(tabla_3)
 
 #Charges
-tabla_4 <- DF %>%
+tabla_4 <- df2 %>%
   dplyr::reframe(Prom    = mean(charges, na.rm = TRUE),
                    Mediana = median(charges, na.rm = TRUE),
                    Moda    = mfv(charges, na_rm = TRUE)[1],
@@ -239,6 +196,50 @@ print(valAtipCHA)
 print(outliersCHA)
 write.xlsx(valAtipCHA, "ValAtipcha.xlsx")
 xtable(valAtipCHA)
+
+# REMPLAZO DE LOS NA'S PARA LA ANALITICA
+moda_sex <- df2 %>%
+  filter(!is.na(sex)) %>%
+  count(sex) %>%
+  top_n(1,n) %>%
+  pull(sex)
+
+moda_fumador <- df2 %>%
+  filter(!is.na(smoker)) %>%
+  count(smoker) %>%
+  top_n(1, n) %>%
+  pull(smoker)
+
+moda_region <- df2 %>%
+  filter(!is.na(region)) %>%
+  count(region) %>%
+  top_n(1, n) %>%
+  pull(region)
+
+moda_children <- df2 %>%
+  filter(!is.na(children)) %>%
+  count(children) %>%
+  top_n(1, n) %>%
+  pull(children)
+
+media_age <- mean(DF$age, na.rm = TRUE)
+media_bmi <- mean(DF$bmi, na.rm = TRUE)
+media_charges <- mean(DF$charges, na.rm = TRUE)
+
+# Reemplazar los NA con la moda,media.
+DF <- df2 %>%
+  mutate(
+    sex = replace_na(sex, moda_sex),
+    smoker = replace_na(smoker, moda_fumador),
+    region = replace_na(region, moda_region),
+    age = ifelse(is.na(age), media_age, age),
+    bmi = ifelse(is.na(bmi), media_bmi, bmi),
+    children = ifelse(is.na(children), moda_children, children),
+    charges = ifelse(is.na(charges), media_charges, charges))
+# Visualizar conjunto de datos
+head(DF)
+latex_table <- xtable(head(DF))
+print(latex_table, type = "latex", include.rownames = TRUE)
 
 # Calcular el IQR para la columna
 IQR_age <- valAtipAge$IQRAge
@@ -421,8 +422,6 @@ xtable(greg)
 ggsave("grbreg.png", grbreg, width = 8, height = 6, dpi = 300)
 
 #tabals de contigencia
-tabla_contingencia <- table(DF1$sex, DF1$smoker)
-print(tabla_contingencia)
 
 # Categorizar 'charges'
 DF1$charges_cat <- cut(DF1$charges, breaks = c(-Inf, 10000, 20000, Inf), labels = c("bajo", "medio", "alto"))
@@ -477,10 +476,13 @@ curtosis_df <- data.frame(
 curtosis <- xtable(curtosis_df, caption = "Curtosis de las Variables")
 print(curtosis, comment = FALSE, booktabs = TRUE)
 
-DF3 <- read.xlsx("DF1.xlsx")
 #Correlacioness
 #Diagrama de dispersion
 colnames(DF3)
+
+windowsFonts()
+capabilities()
+
 #Charges y Age
 cor_charges_age <- ggplot(DF3, aes(x = age, y = charges)) + 
   geom_point(
@@ -493,7 +495,7 @@ cor_charges_age <- ggplot(DF3, aes(x = age, y = charges)) +
   ) +
   labs(title = "Relación entre Edad y Cargos Médicos", x = "Edad", y = "Cargos Médicos") +
   theme_ipsum()
-ggsave("edad_cargos_medicos.png", plot = cor_charges_age , width = 8, height = 6, dpi = 300)
+
 
 #charges y bmi
 cor_charges_bmi <- ggplot(DF1, aes(x = bmi, y = charges)) + 
@@ -507,10 +509,9 @@ cor_charges_bmi <- ggplot(DF1, aes(x = bmi, y = charges)) +
   ) +
   labs(title = "Relación entre BMI y Cargos Médicos", x = "BMI", y = "Cargos Médicos") +
   theme_ipsum()
-ggsave("cor-charges-bmi.png", cor_charges_bmi, width = 8, height = 6, dpi = 300)
 
 #charges y children
-cor_charges_children <- ggplot(DF, aes(x = children, y = charges)) + 
+cor_charges_children <- ggplot(DF1, aes(x = children, y = charges)) + 
   geom_point(
     color = "black",
     fill = "#69b3a2",
@@ -521,7 +522,25 @@ cor_charges_children <- ggplot(DF, aes(x = children, y = charges)) +
   ) +
   labs(title = "Relación entre Número de Hijos y Cargos Médicos", x = "Número de Hijos", y = "Cargos Médicos") +
   theme_ipsum()
-ggsave("cor-charges-children.png", cor_charges_children, width = 8, height = 6, dpi = 300)
+
+install.packages("Cairo")
+library(Cairo)
+
+# Guardar el gráfico de Edad y Cargos Médicos
+Cairo(600, 600, file="cor_charges_age.png", type="png", bg="white", dpi=72, antialias="subpixel")
+print(cor_charges_age)
+dev.off()
+
+# Guardar el gráfico de BMI y Cargos Médicos
+Cairo(600, 600, file="cor_charges_bmi.png", type="png", bg="white", dpi=72, antialias="subpixel")
+print(cor_charges_bmi)
+dev.off()
+
+# Guardar el gráfico de Número de Hijos y Cargos Médicos
+Cairo(600, 600, file="cor_charges_children.png", type="png", bg="white", dpi=72, antialias="subpixel")
+print(cor_charges_children)
+dev.off()
+
 
 install.packages("corrplot")
 library(corrplot)
@@ -529,11 +548,14 @@ library(fastDummies)
 # Columnas dummy
 DFDUMMY <- dummy_cols(DF3, select_columns = c("sex", "smoker", "region"), remove_selected_columns = TRUE)
 head(DFDUMMY)
-# Ver el dataframe en una ventana de visualización de datos
+# Ver el dataframe en ventana 
 View(DFDUMMY)
 
 write.xlsx(DFDUMMY, "DFDUMMY.xlsx")
 print(DFDUMMY)
+# Asumiendo que tu dataframe se llama DF1
+p <- head(DF1, 10)
+print(xtable(p), type = "latex")
 
 
 # Calcular la matriz de correlaciones DFDUMMY
@@ -561,8 +583,6 @@ for(num in numeric) {
 DFFINAL <- cbind(DFDUMMY, dataInter)
 print(DFFINAL)
 ncol(DFFINAL)
-
-
 
 # Calcular la matriz de correlaciones
 corr_matrix <- cor(dataInter, use = "pairwise.complete.obs")
