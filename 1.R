@@ -478,7 +478,6 @@ print(curtosis, comment = FALSE, booktabs = TRUE)
 
 #Correlacioness
 #Diagrama de dispersion
-colnames(DF3)
 
 windowsFonts()
 capabilities()
@@ -602,152 +601,99 @@ png("corrplot_large2.png", width = 1200, height = 1200, res = 200)
 corrplot(corr_matrix2, method = "color", tl.cex = 0.6, tl.col = "black", cl.cex = 0.7, addgrid.col = "gray")
 dev.off()
 
-
+colnames(DFFINAL)
 install.packages("car")
 library(car)
 #MODELOq
 #Ajuste de modelo
-modelo1 <- lm(charges ~ age + smoker_yes + children + bmi + sex_female + sex_female_age + region_northeast + region_northwest + region_southeast + region_southwest + smoker_yes_age + smoker_yes_bmi + smoker_yes_children + sex_male_charges + sex_female_charges + smoker_yes_charges + smoker_no_charges + region_northeast_charges + region_northwest_charges + region_southeast_charges + region_southwest_charges, data = DFFINAL )
+modelos <- lm(charges ~ age+bmi+smoker_no+smoker_yes+sex_male_age+smoker_yes_age+smoker_no_age+region_southeast_age+smoker_yes_bmi+smoker_no_bmi+smoker_yes_children+smoker_no_children, data= DFFINAL)
+summary(modelos)
+xtable(summary(modelos))
+
+modelo1 <- lm(charges ~ age+bmi+smoker_no+smoker_yes_age+region_southeast_age+smoker_yes_bmi+smoker_yes_children+smoker_no_children, data= DFFINAL)
 summary(modelo1)
-vif_modelo1 <- vif(modelo1)
-print(vif_modelo1)
-vif_altos <- vif_modelo1[vif_modelo1 > 5]
-print(vif_altos)
+xtable(summary(modelo1))
 
-modelot <- lm(charges ~ smoker_no + sex_male_age + sex_male_charges + sex_female_charges + smoker_yes_charges, data = DFFINAL)
-summary(modelot) #1
+modelo2 <- lm(charges ~ age+bmi+smoker_no+smoker_yes_age+smoker_yes_bmi, data= DFFINAL)
+summary(modelo2)
+xtable(summary(modelo2))
 
-modelo2 <- lm(charges ~ age + smoker_yes_age + smoker_yes_bmi + smoker_no_bmi + smoker_no + smoker_yes_children + smoker_no_age + sex_female_children + smoker_yes_charges +sex_male_charges+ region_southwest_charges,  data = DFFINAL )
-summary(modelo2) #64.85
 vif_modelo2 <- vif(modelo2)
 print(vif_modelo2)
 vif_altos <- vif_modelo2[vif_modelo2 > 5]
 print(vif_altos)
 
-modelo4 <- lm(charges ~ age + smoker_yes_age + smoker_yes_bmi + smoker_no_bmi + smoker_yes_children + sex_female_children + smoker_yes_charges +sex_male_charges+ region_southwest_charges,  data = DFFINAL )
-summary(modelo4) #64.87
+modelo3 <- lm(charges ~ age + bmi + smoker_yes, data = DFFINAL)
+summary(modelo3) #39.08limpia
+xtable(summary(modelo3))
 
-modelo_sencillo <- lm(charges ~ age + bmi + children + smoker_yes + sex_female + region_northeast + region_northwest + region_southeast, data = DFFINAL)
-summary(modelo_sencillo) #39.08
+modelo4 <- lm(charges ~ smoker_yes_age + smoker_yes_bmi + smoker_no_age + smoker_yes_age, data = DFFINAL )
+summary(modelo4)#40.6 limpia
+xtable(summary(modelo4))
 
-modelo5 <- lm(charges ~ age + smoker_yes_age + smoker_yes_bmi + smoker_no_bmi + smoker_no + smoker_yes_children + smoker_no_age + sex_female_children + smoker_yes_charges +sex_male_charges+ region_southwest_charges+ smoker_no_bmi,  data = DFFINAL )
-summary(modelo5) #64.85
-
-modelo6 <- lm(charges ~  smoker_yes_age + smoker_yes_children  + sex_female_children + smoker_yes_charges+ age +sex_male_charges+ region_southwest_charges, data = DFFINAL )
-summary(modelo6) #64.9
-
-modelo30 <- lm(charges ~  age + smoker_yes_age + smoker_yes_children  + sex_female_children, data = DFFINAL )
-summary(modelo30) #33.28
-
-m7 <- lm(charges ~ ., data = DFFINAL)
-summary(m7)
-
-modelo8 <- lm(charges ~ age + smoker_yes + children + bmi + sex_female + sex_female_age + region_northeast + region_northwest + region_southeast + smoker_yes_age + smoker_yes_bmi + smoker_yes_children + sex_male_charges + sex_female_charges + smoker_yes_charges + region_northeast_charges + region_northwest_charges + region_southeast_charges, data = DFFINAL )
-summary(modelo8) #1
 vif_modelo8 <- vif(modelo8)
 print(vif_modelo8)
 vif_altos <- vif_modelo8[vif_modelo8 > 5]
 print(vif_altos)
 
-modelo9 <- lm(charges ~ age + smoker_yes + children + bmi + sex_female + sex_female_age + smoker_yes_age + smoker_yes_bmi + smoker_yes_children + sex_male_charges + sex_female_charges + smoker_yes_charges + region_northeast_charges + region_northwest_charges + region_southeast_charges, data = DFFINAL )
-summary(modelo9) #1
+modelo5 <- lm(charges ~ age + smoker_yes_age + smoker_yes_bmi, data = DFFINAL )
+summary(modelo5)
+xtable(summary(modelo5))
 
-modelo10 <- lm(charges ~ age + smoker_yes + children + bmi + sex_female + smoker_yes_age + smoker_yes_bmi + smoker_yes_children + sex_male_charges + sex_female_charges + smoker_yes_charges + region_southeast_charges, data = DFFINAL )
-summary(modelo10)#1
 
-modelo <- lm(charges ~ smoker_yes_age + smoker_no_children + smoker_yes_children + smoker_no_bmi + smoker_yes_bmi + smoker_no_age + smoker_yes_age + smoker_yes, data = DFFINAL )
-summary(modelo)#40.6
 
-modelop <- lm(charges ~ age + smoker_yes +  region_northeast + region_southwest + smoker_yes_age + smoker_yes_bmi, data = DFFINAL )
-summary(modelop)#40.71
-
-cor(DF1$charges,DF1$age)
-cor(DF1$charges,DF1$bmi)
-cor(DF1$charges,DF1$children)
-
-xtable(summary(modelo1))
-
-print(DF1)
-par(mfrow = c(2,2))
-plot(charges ~ age, data = DF1)
-plot(charges ~ bmi, data = DF1)
-plot(charges ~ children, data = DF1)
-
-#Multicolinealidad
-#Verificar multicolinelidad
-library(car)
-vif(mod.multiple)
-library("car")
-
-barplot( vif(m3),
-         main      = "VIF",
-         horiz     = FALSE,
-         col       = "steelblue",
-         cex.names = 0.8)
-abline(h = 2.5, lwd = 2, lty = 2, col='red')
-
-#Modelo de regresi?n cuadr?tica
-modelo.cuadratico = lm(charges ~ age + smoker)
-summary(modelo.cuadratico)
-
-#Grafico de valores estimados
-plot(precio, n_paquetes, pch = 19)
-points(precio, modelo.precio$fitted.values, col = 2, pch = 19, cex = 2, type = "b")
-points(precio, modelo.cuadratico$fitted.values, col = 4, pch = 19, cex = 2, type = "b")
-
-ECM_ml <- sum(modelo.precio$residuals^2)/length(modelo.precio$residuals)
-ECM_mc <- sum(modelo.cuadratico$residuals^2)/length(modelo.cuadratico$residuals)
-
-RECM_ml <- sqrt(ECM_ml)
-RECM_mc <- sqrt(ECM_mc)
-
-EAM_ml <- sum( abs(modelo.precio$residuals) )/length(modelo.precio$residuals)
-EAM_mc <- sum( abs(modelo.cuadratico$residuals) )/length(modelo.cuadratico$residuals)
-
-#Reporte
-Resultados = cbind.data.frame("Metrica" = c ("ECM","RECM","EAM"),
-                              "Mod_Lineal" = c(ECM_ml,RECM_ml,EAM_ml),
-                              "Mod_Cuadratica" = c(ECM_mc,RECM_mc,EAM_mc))
-Resultados
+#Validación de los supuestos
+#modelo4
 #Ajuste de un modelo de regresion multiple
-mod.multiple <- lm(y ~ x1+x2+x3+x4, data = Datos_multiple)
-summary(mod.multiple)
+modelo4 <- lm(charges ~ smoker_yes_age + smoker_yes_bmi + smoker_no_age + smoker_yes_age, data = DFFINAL )
+summary(modelo4)
 
 #Verificar multicolinelidad
 library(car)
-vif(mod.multiple)
+vif(modelo4)
 
-
-mod.multiple2 <- lm(y ~ x1+x2+x3, data = Datos_multiple)
-summary(mod.multiple2)
-
-mod.multiple3 <- lm(y ~ x1+x2, data = Datos_multiple)
-summary(mod.multiple3)
-
-mod.multiple4 <- lm(y ~ x2, data = Datos_multiple)
-summary(mod.multiple4)
-
-
-#Validaci?n de supuestos sobre el modelo final
-residuales <- mod.multiple4$residuals
-
+#Validacion de supuestos sobre el modelo final
+residuales4 <- modelo4$residuals
 #Media cero
-t.test(residuales)
-
+t.test(residuales4)
 #Independencia
 #install.packages("randtests")
 library(randtests)
-runs.test(residuales)
-
+runs.test(residuales4)
 #Normalidad
 library(nortest)
-
-ad.test(residuales)
-shapiro.test(residuales)
-
-
+ad.test(residuales4)
+shapiro.test(residuales4)
 #Homogeneidad de varianzas
-install.packages("skedastic")
-library(skedastic)
+# Cargar el paquete lmtest si aún no lo has hecho
+library(lmtest)
+homoge <- bptest(modelo4)
+print(homoge)
 
-white_lm(mod.multiple4 )
+#Validación de los supuestos
+#modelo5
+#Ajuste de un modelo de regresion multiple
+modelo5 <- lm(charges ~ age + smoker_yes_age + smoker_yes_bmi, data = DFFINAL )
+summary(modelo5)
+
+#Verificar multicolinelidad
+library(car)
+vif(modelo5)
+
+#Validacion de supuestos sobre el modelo final
+residuales5 <- modelo5$residuals
+#Media cero
+t.test(residuales5)
+#Independencia
+#install.packages("randtests")
+library(randtests)
+runs.test(residuales5)
+#Normalidad
+library(nortest)
+ad.test(residuales5)
+shapiro.test(residuales5)
+#Homogeneidad de varianzas
+# Cargar el paquete lmtest si aún no lo has hecho
+library(lmtest)
+homoge <- bptest(modelo5)
+print(homoge)
